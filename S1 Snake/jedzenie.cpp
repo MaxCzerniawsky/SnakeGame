@@ -7,8 +7,8 @@ void jedzenie(char ek[80][20], char znak) {
         y = rand() % 18 + 1;
     } while (ek[x][y] != ' ');
 
-    if (znak == 'R') ustaw_kolor(KOLOR_NIEBIESKI);
-    else if (znak == 'U') ustaw_kolor(KOLOR_ZIELONY);
+    if (znak == 'R') ustaw_kolor(KOLOR_NIEBIESKI); // Racje ¿ywnoœciowe
+    else if (znak == 'U') ustaw_kolor(KOLOR_ZIELONY); // Udrêka
     else if (znak == 'T') ustaw_kolor(KOLOR_CZERWONY); // Trucizna - czerwona
     else if (znak == 'Z') ustaw_kolor(KOLOR_BIALY); // ¯ycie - fioletowe
 

@@ -87,14 +87,14 @@ void lista::usun_ogon() {
 }
 
 void lista_ruch(lista* waz1, int k, char ek[80][20], int* zjedz) {
-    *zjedz = 0;
+    *zjedz = 0; // Domyœlnie brak akcji specjalnej
     if (waz1->pierwsza == NULL) return;
 
     waz* glowa = waz1->pierwsza;
     int nx = glowa->x;
     int ny = glowa->y;
 
-    // Obliczanie nowej pozycji
+    // 1. Obliczanie nowej pozycji, na któr¹ w¹¿ CHCE wejœæ
     switch (k) {
     case 1: ny--; break;
     case 2: nx++; break;
@@ -102,39 +102,45 @@ void lista_ruch(lista* waz1, int k, char ek[80][20], int* zjedz) {
     case 4: nx--; break;
     }
 
-    // --- DETEKCJA KOLIZJI I ZNAKÓW ---
+    // 2. SPRAWDZENIE CO JEST NA NOWYM POLU (ZANIM TAM WEJDZIEMY)
     char co_jest = ek[nx][ny];
 
-    // Œmieræ: uderzenie w ramkê (#) lub cia³o wê¿a (o, s, x)
+    // Œmieræ: uderzenie w ramkê (#) lub cia³o (o, s, x)
     if (co_jest == '#' || co_jest == 'o' || co_jest == 's' || co_jest == 'x') {
-        *zjedz = 99;
-        return;
+        *zjedz = 99; // Wysy³amy sygna³ do funkcji game()
+        return;      // Koñczymy funkcjê - w¹¿ nie robi ruchu, "rozbija siê"
     }
 
-    // Zapamiêtanie ogona przed ruchem (do wyd³u¿ania lub czyszczenia)
+    // 3. LOGIKA RUCHU (Przesuwanie segmentów)
+
+    // Zapamiêtujemy ogon, ¿eby wiedzieæ, co wyczyœciæ z ekranu
     waz* ostatni = glowa;
     while (ostatni->nastepna != NULL) ostatni = ostatni->nastepna;
     int ost_x = ostatni->x;
     int ost_y = ostatni->y;
 
-    // Usuniêcie ogona z mapy bitowej przed przesuniêciem
+    // Wa¿ne: usuwamy stary œlad ogona z mapy
     ek[ost_x][ost_y] = ' ';
 
-    // Przesuwanie segmentów
+    // Przesuwanie wszystkich czêœci wê¿a
     waz* segment = glowa;
     int pop_x = nx;
     int pop_y = ny;
     while (segment != NULL) {
-        int tx = segment->x; int ty = segment->y;
-        segment->x = pop_x; segment->y = pop_y;
-        pop_x = tx; pop_y = ty;
+        int tx = segment->x;
+        int ty = segment->y;
+        segment->x = pop_x;
+        segment->y = pop_y;
+
+        // Aktualizacja mapy ek dla ka¿dego segmentu
+        ek[segment->x][segment->y] = segment->c;
+
+        pop_x = tx;
+        pop_y = ty;
         segment = segment->nastepna;
     }
 
-    // Wpisanie nowej pozycji g³owy do mapy ek
-    ek[nx][ny] = glowa->c;
-
-    // --- REAKCJA NA ZNAKI ---
+    // 4. REAKCJA NA ZNAKI (Tylko jeœli nie by³o œmierci)
     if (co_jest == 'R') {
         waz1->dodaj(ost_x, ost_y, 'o');
         *zjedz = 1;
@@ -148,5 +154,8 @@ void lista_ruch(lista* waz1, int k, char ek[80][20], int* zjedz) {
     }
     else if (co_jest == 'Z') {
         *zjedz = 4;
+    }
+    else if (co_jest == 'O') {
+        *zjedz = 5;
     }
 }

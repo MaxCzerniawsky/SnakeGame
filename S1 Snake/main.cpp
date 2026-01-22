@@ -56,85 +56,68 @@ int sprawdz_stan_gry(int punkty, int zycia) {
     return 0; // Graj dalej
 }
 
-void ramka() {
-    // Możesz dodać kolor dla ramki
-    ustaw_kolor(KOLOR_BIALY); // Różowa ramka
-
+void ramka(char ek[80][20]) {
     for (int i = 0; i < 80; i++) {
-        gotoxy(i, 0);
-        printf("#");
-        gotoxy(i, 19);
-        printf("#");
+        for (int j = 0; j < 20; j++) {
+            if (i == 0 || i == 79 || j == 0 || j == 19) {
+                ek[i][j] = '#'; // WPISANIE DO PAMIĘCI GRY
+                gotoxy(i, j);
+                printf("#");    // WYŚWIETLENIE NA EKRANIE
+            }
+        }
     }
-
-    for (int i = 0; i < 20; i++) {
-        gotoxy(0, i);
-        printf("#");
-        gotoxy(79, i);
-        printf("#");
-    }
-
-    przywroc_kolor();
 }
 
 
 void menu(const char* imieGracza) {
-
+    char ek[80][20]; // Tworzymy lokalną tablicę specjalnie dla menu
     clean();
 
-	gotoxy(3, 5);
-	printf("*");
-	gotoxy(5, 5);
-	printf("%s", imieGracza);
+    // Rysujemy ramkę najpierw, żeby napisy były na jej tle
+    ramka(ek);
 
-	gotoxy(15, 5);
-	printf("* \n");
-	printf("\n");
-	printf("    1 - Play \n");
-	printf("    2 - Name \n");
-	printf("    3 - Raport \n");
-	printf("    4 - Reset \n");
-	printf("    5 - EXIT \n");
-	//printf("    6 - Read data \n");
-	printf("\n");
-	gotoxy(0, 0);
-	ramka();
-	gotoxy(4, 15);
-	printf("    Press number to choose option");
+    gotoxy(5, 5);
+    printf("GRACZ: %s", imieGracza);
 
+    gotoxy(5, 7);
+    printf("1 - Play");
+    gotoxy(5, 8);
+    printf("2 - Name");
+    gotoxy(5, 9);
+    printf("3 - Raport");
+    gotoxy(5, 10);
+    printf("4 - Reset");
+    gotoxy(5, 11);
+    printf("5 - EXIT");
+
+    gotoxy(4, 15);
+    printf("Press number to choose option");
 }
 
 
 int game() {
-    int punkty = 0;
-    int punkty_ai = 0;
-    int zycia = 3;
-    int poziom = 1;
+    int punkty = 0, punkty_ai = 0, zycia = 3, poziom = 1;
     char ek[80][20] = { ' ' };
-    int kier = 1, koniec = 0, kier2 = 1;
-    int licznik_odskoku_ai = 0;
+    int kier = 1, koniec = 0, kier2 = 1, licznik_odskoku_ai = 0;
+
+    // Zmienne dla robaczka (Poziom 3)
+    int robak_x = -1, robak_y = -1;
+    int robak_kier = 0, robak_kroki = 0;
 
     lista* waz1 = NULL, * waz2 = NULL;
-
     auto resetuj_weze = [&]() {
         if (waz1) delete waz1;
         if (waz2) delete waz2;
-        waz1 = new lista();
-        waz2 = new lista();
-        waz1->dodaj(10, 10, 'o'); waz1->dodaj(11, 10, 'o'); waz1->dodaj(12, 10, 'x'); // Gracz
-        waz2->dodaj(40, 5, 's'); waz2->dodaj(41, 5, 's'); waz2->dodaj(42, 5, 's');    // AI
+        waz1 = new lista(); waz2 = new lista();
+        waz1->dodaj(10, 10, 'o'); waz1->dodaj(11, 10, 'o'); waz1->dodaj(12, 10, 'x');
+        waz2->dodaj(40, 5, 's'); waz2->dodaj(41, 5, 's'); waz2->dodaj(42, 5, 's');
         };
 
     resetuj_weze();
-    ini(ek);
-    ramka(); // Zakładam, że ramka wypełnia ek znakami '#'
-    druk_e(ek);
-
-    jedzenie(ek, 'R');
-    jedzenie(ek, 'U');
+    ini(ek); ramka(ek); druk_e(ek);
+    jedzenie(ek, 'R'); jedzenie(ek, 'U');
 
     while (!koniec) {
-        // Interfejs
         gotoxy(2, 25);
         printf("POZIOM: %d | TWOJE PUNKTY: %d | ZYCIA: %d      ", poziom, punkty, zycia);
         gotoxy(2, 26);
@@ -143,58 +126,123 @@ int game() {
         kla(&kier, &koniec);
         if (koniec) break;
 
-        kier2 = oblicz_kierunek_ai(waz2, ek, kier2, &licznik_odskoku_ai);
+        kier2 = oblicz_kierunek_ai(waz2, ek, kier2, &licznik_odskoku_ai, zycia, poziom);
+
+        // --- LOGIKA ROBACZKA (TYLKO POZIOM 3) ---
+        if (poziom == 3 && robak_x != -1) {
+            ek[robak_x][robak_y] = ' '; // Czyścimy starą pozycję
+            gotoxy(robak_x, robak_y); printf(" ");
+
+            if (robak_kroki <= 0) {
+                robak_kier = rand() % 4 + 1; // 1-góra, 2-prawo, 3-dół, 4-lewo
+                robak_kroki = rand() % 3 + 3; // 3 do 5 kroków
+            }
+
+            int nx = robak_x, ny = robak_y;
+            if (robak_kier == 1) ny--;
+            else if (robak_kier == 2) nx++;
+            else if (robak_kier == 3) ny++;
+            else if (robak_kier == 4) nx--;
+
+            // Sprawdzenie kolizji z ramką lub innymi obiektami
+            if (nx <= 0 || nx >= 79 || ny <= 0 || ny >= 19 || ek[nx][ny] != ' ') {
+                robak_kier = (robak_kier % 4) + 1; // Zmiana kierunku przy przeszkodzie
+                robak_kroki = 0;
+            }
+            else {
+                robak_x = nx; robak_y = ny;
+                robak_kroki--;
+            }
+
+            ek[robak_x][robak_y] = 'O';
+            ustaw_kolor(KOLOR_ZIELONY);
+            gotoxy(robak_x, robak_y); printf("O");
+            przywroc_kolor();
+        }
 
         int wynik_gracz = 0;
         int wynik_ai = 0;
-
         lista_ruch(waz1, kier, ek, &wynik_gracz);
         lista_ruch(waz2, kier2, ek, &wynik_ai);
 
         // --- OBSŁUGA GRACZA ---
         if (wynik_gracz == 99) {
-            system("cls"); printf("\n\n PRZEGRANA! Kolizja!");
-            break;
+            zycia = 0; // Ustawiamy 0 żyć, co za chwilę zakończy grę
+
+            system("cls");
+            ustaw_kolor(KOLOR_CZERWONY);
+            printf("\n\n   KRAKSA! Uderzyles w sciane!");
+            Sleep(1500);
+            przywroc_kolor();
+
+            // Nie potrzebujemy break, bo pętla sama sprawdzi stan żyć poniżej
         }
         if (wynik_gracz == 1) { punkty++; jedzenie(ek, 'R'); }
         else if (wynik_gracz == 2) { punkty--; jedzenie(ek, 'U'); }
         else if (wynik_gracz == 3) { zycia--; jedzenie(ek, 'T'); }
         else if (wynik_gracz == 4) { zycia++; jedzenie(ek, 'Z'); }
+        else if (wynik_gracz == 5) { punkty += 10; robak_x = -1; /* Zjedzony! */ }
 
         // --- OBSŁUGA AI ---
-        if (wynik_ai == 99) {
-            system("cls"); printf("\n\n ZWYCIESTWO! Przeciwnik sie rozbil!");
-            break;
-        }
+        if (wynik_ai == 99) { system("cls"); printf("\n\n ZWYCIESTWO! AI sie rozbilo!"); break; }
         if (wynik_ai != 0) {
             licznik_odskoku_ai = 4;
             if (wynik_ai == 1) { punkty_ai++; jedzenie(ek, 'R'); }
+            else if (wynik_ai == 5) { punkty_ai += 10; robak_x = -1; }
             else if (wynik_ai == 2) jedzenie(ek, 'U');
             else if (wynik_ai == 3) jedzenie(ek, 'T');
             else if (wynik_ai == 4) jedzenie(ek, 'Z');
         }
 
-        // --- PROGRESJA POZIOMU ---
-        if (poziom == 1 && punkty >= 10) {
-            poziom = 2; punkty = 0; punkty_ai = 0;
-            system("cls"); printf("\n\n AWANS NA POZIOM 2!"); Sleep(1500);
-            ini(ek); ramka(); druk_e(ek);
+        // --- PROGRESJA POZIOMÓW ---
+
+        // Przejście na Poziom 2
+        if (poziom == 1 && punkty >= 2) {
+            poziom = 2;
+            punkty = 0; punkty_ai = 0;
+
+            system("cls");
+            printf("\n\n   AWANS NA POZIOM 2!");
+            Sleep(1500);        // Gracz widzi napis przez 1.5 sekundy
+
+            system("cls");      // <--- CZYŚCIMY NAPIS "AWANS..." przed nową planszą
+            clean();            // Resetujemy ewentualne dane w tablicy
+
+            ini(ek);
+            ramka(ek);            // Rysujemy świeżą ramkę na czystym ekranie
+            druk_e(ek);
             resetuj_weze();
+
             jedzenie(ek, 'R'); jedzenie(ek, 'U'); jedzenie(ek, 'T'); jedzenie(ek, 'Z');
             continue;
         }
 
-        // --- KONIEC GRY ---
-        if (zycia <= 0) {
-            system("cls"); printf("\n\n PRZEGRANA! Straciles zycia.");
-            break;
-        }
-        if (punkty_ai >= 10) {
-            system("cls"); printf("\n\n PRZEGRANA! AI zebralo 10 punktow.");
-            break;
+        // Przejście na Poziom 3
+        if (poziom == 2 && punkty >= 10) {
+            poziom = 3;
+            punkty = 0; punkty_ai = 0;
+
+            system("cls");
+            printf("\n\n   AWANS NA POZIOM 3!");
+            Sleep(1500);
+
+            system("cls");      // <--- CZYŚCIMY NAPIS przed wejściem robaczka
+            clean();
+
+            ini(ek);
+            ramka(ek);
+            druk_e(ek);
+            resetuj_weze();
+
+            jedzenie(ek, 'R'); jedzenie(ek, 'U'); jedzenie(ek, 'T'); jedzenie(ek, 'Z');
+
+            robak_x = 40; robak_y = 10; robak_kroki = 0;
+            continue;
         }
 
-        // Rysowanie
+        if (sprawdz_stan_gry(punkty, zycia)) break;
+        if (punkty_ai >= 10) { system("cls"); printf("\n\n PRZEGRANA! AI zebralo 10 pkt."); break; }
+
         ustaw_kolor(KOLOR_ZOLTY); waz1->wyswietl();
         ustaw_kolor(KOLOR_CZERWONY); waz2->wyswietl();
         przywroc_kolor();
@@ -202,7 +250,6 @@ int game() {
         Sleep(250);
         waz1->czysc(); waz2->czysc();
     }
-
     delete waz1; delete waz2;
     return punkty;
 }

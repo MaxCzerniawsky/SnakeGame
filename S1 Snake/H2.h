@@ -54,7 +54,7 @@ void jedzenie(char ek[80][20], char znak);
 void druk_e(char ek[80][20]);
 void ini(char ek[80][20]);
 void clean();
-void ramka();
-int oblicz_kierunek_ai(lista* waz2, char ek[80][20], int aktualny_kier2, int* licznik_odskoku);
+void ramka(char ek[80][20]);
+int oblicz_kierunek_ai(lista* waz2, char ek[80][20], int aktualny_kier2, int* licznik_odskoku, int aktualne_zycia, int poziom);
 
 #endif
