@@ -63,7 +63,7 @@ int oblicz_kierunek_ai(lista* waz2, char ek[80][20], int aktualny_kier2, int* li
             else if (o_x != -1) { cel_x = o_x; cel_y = o_y; }
         }
         else { // Normalnie na P3: O -> R -> Z
-            if (o_x != -1) { cel_x = o_x; cel_y = o_y; } // Robak ma priorytet, ale tylko w zasiegu 5!
+            if (o_x != -1) { cel_x = o_x; cel_y = o_y; } 
             else if (r_x != -1) { cel_x = r_x; cel_y = r_y; }
             else if (z_x != -1) { cel_x = z_x; cel_y = z_y; }
         }

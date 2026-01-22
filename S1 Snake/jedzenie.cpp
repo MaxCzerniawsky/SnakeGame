@@ -8,7 +8,7 @@ void jedzenie(char ek[80][20], char znak) {
     } while (ek[x][y] != ' ');
 
     if (znak == 'R') ustaw_kolor(KOLOR_NIEBIESKI); // Racje ¿ywnoœciowe
-    else if (znak == 'U') ustaw_kolor(KOLOR_ZIELONY); // Udrêka
+    else if (znak == 'U') ustaw_kolor(KOLOR_ZIELONY); // Utrata ¿ywnoœci
     else if (znak == 'T') ustaw_kolor(KOLOR_CZERWONY); // Trucizna - czerwona
     else if (znak == 'Z') ustaw_kolor(KOLOR_BIALY); // ¯ycie - fioletowe
 
@@ -33,7 +33,6 @@ void aktualizuj_pulapki(char ek[80][20], int* px, int* py, clock_t* ostatnia_zmi
     }
     
     else if (*stan_pulapki == 0 && minelo >= 2.0) {
-        
         int nx, ny;
         do {
             nx = rand() % 78 + 1;

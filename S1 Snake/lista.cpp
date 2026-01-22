@@ -108,9 +108,9 @@ void lista_ruch(lista* waz1, int k, char ek[80][20], int* zjedz) {
     char co_jest = ek[nx][ny];
 
     // Œmieræ: uderzenie w ramkê (#) lub cia³o (o, s, x)
-    if (co_jest == '#' || co_jest == 'o' || co_jest == 's' || co_jest == 'x') {
-        *zjedz = 99; // Wysy³amy sygna³ do funkcji game()
-        return;      // Koñczymy funkcjê - w¹¿ nie robi ruchu, "rozbija siê"
+    if (co_jest == '#' || co_jest == '=') {
+        *zjedz = 99;
+        return;
     }
 
     // 3. LOGIKA RUCHU (Przesuwanie segmentów)
