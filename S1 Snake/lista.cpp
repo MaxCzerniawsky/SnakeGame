@@ -3,6 +3,16 @@ lista::lista() {
 	pierwsza = 0;
 }
 
+void lista::wyczysc_liste() {
+    waz* aktualny = pierwsza;
+    while (aktualny != NULL) {
+        waz* do_usuniecia = aktualny;
+        aktualny = aktualny->nastepna;
+        delete do_usuniecia;
+    }
+    pierwsza = NULL;
+}
+
 void lista::dodaj(int x, int y, char c) {
 	waz* nowa = new waz;
 
@@ -29,25 +39,17 @@ void lista::wyswietl() {
     waz* temp = pierwsza;
     if (temp == NULL) return;
 
-    // Dla gracza - ¿ó³ty
-    ustaw_kolor(KOLOR_ZOLTY);
-
     while (temp != NULL) {
         gotoxy(temp->x, temp->y);
-        printf("%c", temp->znak);
+        printf("%c", temp->znak); // lub temp->c, zale¿nie jak masz w strukturze
         temp = temp->nastepna;
     }
-
-    przywroc_kolor();
 }
 
 // Lub jeœli chcesz oddzieln¹ funkcjê dla przeciwnika:
 void lista::wyswietl_przeciwnik() {
     waz* temp = pierwsza;
     if (temp == NULL) return;
-
-    // Dla przeciwnika - czerwony
-    ustaw_kolor(KOLOR_CZERWONY);
 
     while (temp != NULL) {
         gotoxy(temp->x, temp->y);

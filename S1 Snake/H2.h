@@ -6,6 +6,7 @@
 #include <conio.h>
 #include <cstdlib>
 #include <cmath>
+#include <time.h>
 
 // Definicje kolorów
 #define KOLOR_ZOLTY (FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY)
@@ -31,10 +32,11 @@ struct lista {
     void usun_ogon();
     void ruch(int k, char ek[80][20]);
     void wyswietl_przeciwnik();
+    void wyczysc_liste();
 };
 
 void image();
-
+void aktualizuj_pulapki(char ek[80][20], int* px, int* py, clock_t* ostatnia_zmiana, int* stan_pulapki);
 void ustaw_kolor(WORD kolor);
 void przywroc_kolor();
 
@@ -48,7 +50,9 @@ void lista_ruch(lista* waz1, int k, char ek[80][20], int* zjedz);
 
 void waz_dodaj(lista* l, int x, int y, char c);
 
-
+void aktualizuj_robaczka(int* rx, int* ry, int* rkier, int* rkroki, char ek[80][20]);
+void przygotuj_poziom(int nr, char ek[80][20], int* px, int* py);
+int game();
 void gotoxy(int x, int y);
 void jedzenie(char ek[80][20], char znak);
 void druk_e(char ek[80][20]);

@@ -18,8 +18,41 @@ void jedzenie(char ek[80][20], char znak) {
     przywroc_kolor();
 }
 
+void aktualizuj_pulapki(char ek[80][20], int* px, int* py, clock_t* ostatnia_zmiana, int* stan_pulapki) {
+    clock_t teraz = clock();
+    double minelo = (double)(teraz - *ostatnia_zmiana) / CLOCKS_PER_SEC;
 
-// Dodaj tê funkcjê:
+    // Stan 1: Przeszkoda jest widoczna (trwa 3 sekundy)
+    if (*stan_pulapki == 1 && minelo >= 3.0) {
+        if (*px != -1) {
+            ek[*px][*py] = ' '; 
+            gotoxy(*px, *py); printf(" ");
+        }
+        *stan_pulapki = 0; 
+        *ostatnia_zmiana = teraz;
+    }
+    
+    else if (*stan_pulapki == 0 && minelo >= 2.0) {
+        
+        int nx, ny;
+        do {
+            nx = rand() % 78 + 1;
+            ny = rand() % 18 + 1;
+        } while (ek[nx][ny] != ' ');
+
+        *px = nx; *py = ny;
+        ek[*px][*py] = '#'; 
+
+        ustaw_kolor(KOLOR_CZERWONY);
+        gotoxy(*px, *py); printf("#");
+        przywroc_kolor();
+
+        *stan_pulapki = 1; 
+        *ostatnia_zmiana = teraz;
+    }
+}
+
+
 int sprawdz_kolizje(lista* waz) {
     if (waz->pierwsza == NULL) return 0;
 
@@ -32,9 +65,7 @@ int sprawdz_kolizje(lista* waz) {
         return 1;
     }
 
-    // Uwaga: Kolizje z cia³ami wê¿y (znaki o, x, s, =) 
-    // s¹ teraz wy³apywane bezpoœrednio w funkcji lista_ruch, 
-    // co jest bezpieczniejsze w tym silniku gry.
+    
     return 0;
 }
 
