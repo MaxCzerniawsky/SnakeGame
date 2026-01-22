@@ -26,12 +26,36 @@ void lista::dodaj(int x, int y, char c) {
 }
 
 void lista::wyswietl() {
-	waz* temp = pierwsza;
-	while (temp) {
-		gotoxy(temp->x, temp->y);
-		printf("%c", temp->c);
-		temp = temp->nastepna;
-	}
+    waz* temp = pierwsza;
+    if (temp == NULL) return;
+
+    // Dla gracza - ¿ó³ty
+    ustaw_kolor(KOLOR_ZOLTY);
+
+    while (temp != NULL) {
+        gotoxy(temp->x, temp->y);
+        printf("%c", temp->znak);
+        temp = temp->nastepna;
+    }
+
+    przywroc_kolor();
+}
+
+// Lub jeœli chcesz oddzieln¹ funkcjê dla przeciwnika:
+void lista::wyswietl_przeciwnik() {
+    waz* temp = pierwsza;
+    if (temp == NULL) return;
+
+    // Dla przeciwnika - czerwony
+    ustaw_kolor(KOLOR_CZERWONY);
+
+    while (temp != NULL) {
+        gotoxy(temp->x, temp->y);
+        printf("%c", temp->znak);
+        temp = temp->nastepna;
+    }
+
+    przywroc_kolor();
 }
 
 void lista::czysc() {
@@ -42,48 +66,87 @@ void lista::czysc() {
 	}
 }
 
+void lista::usun_ogon() {
+    if (pierwsza == NULL) return; // Lista pusta
+
+    if (pierwsza->nastepna == NULL) {
+        // Tylko g³owa - mo¿esz zakoñczyæ grê lub zostawiæ
+        return;
+    }
+
+    // ZnajdŸ przedostatni element
+    waz* przedostatni = pierwsza;
+    while (przedostatni->nastepna != NULL && przedostatni->nastepna->nastepna != NULL) {
+        przedostatni = przedostatni->nastepna;
+    }
+
+    // Wyczyœæ ogon z ekranu (ju¿ zrobione w lista_ruch)
+    // Usuñ ostatni element
+    delete przedostatni->nastepna;
+    przedostatni->nastepna = NULL;
+}
+
 void lista_ruch(lista* waz1, int k, char ek[80][20], int* zjedz) {
     *zjedz = 0;
     if (waz1->pierwsza == NULL) return;
 
-    waz* temp = waz1->pierwsza;
-    int x1 = temp->x;
-    int y1 = temp->y;
-    int x2 = x1; // Inicjalizacja na wypadek gdyby waz mial tylko g³owê
-    int y2 = y1;
+    waz* glowa = waz1->pierwsza;
+    int nx = glowa->x;
+    int ny = glowa->y;
 
-    // Ruch g³owy
+    // Obliczanie nowej pozycji
     switch (k) {
-    case 1: temp->y -= 1; break;
-    case 2: temp->x += 1; break;
-    case 3: temp->y += 1; break;
-    case 4: temp->x -= 1; break;
+    case 1: ny--; break;
+    case 2: nx++; break;
+    case 3: ny++; break;
+    case 4: nx--; break;
     }
 
-    // Sprawdzenie jedzenia
-    int kz = 0;
-    if (ek[temp->x][temp->y] == 'R') {
-        kz = 1;
-        ek[temp->x][temp->y] = ' ';
+    // --- DETEKCJA KOLIZJI I ZNAKÓW ---
+    char co_jest = ek[nx][ny];
+
+    // Œmieræ: uderzenie w ramkê (#) lub cia³o wê¿a (o, s, x)
+    if (co_jest == '#' || co_jest == 'o' || co_jest == 's' || co_jest == 'x') {
+        *zjedz = 99;
+        return;
     }
 
-    // Przesuwanie reszty cia³a
-    waz* segment = temp->nastepna;
-    while (segment) {
-        int tx = segment->x;
-        int ty = segment->y;
-        segment->x = x1;
-        segment->y = y1;
-        x1 = tx;
-        y1 = ty;
-        x2 = x1; y2 = y1; // Zapamiêtujemy ostatni segment
+    // Zapamiêtanie ogona przed ruchem (do wyd³u¿ania lub czyszczenia)
+    waz* ostatni = glowa;
+    while (ostatni->nastepna != NULL) ostatni = ostatni->nastepna;
+    int ost_x = ostatni->x;
+    int ost_y = ostatni->y;
+
+    // Usuniêcie ogona z mapy bitowej przed przesuniêciem
+    ek[ost_x][ost_y] = ' ';
+
+    // Przesuwanie segmentów
+    waz* segment = glowa;
+    int pop_x = nx;
+    int pop_y = ny;
+    while (segment != NULL) {
+        int tx = segment->x; int ty = segment->y;
+        segment->x = pop_x; segment->y = pop_y;
+        pop_x = tx; pop_y = ty;
         segment = segment->nastepna;
     }
 
-    if (kz == 1) {
-        // x2, y2 to teraz na pewno pozycja ostatniego elementu przed ruchem
-        waz1->dodaj(x2, y2, 'o');
-        jedzenie(ek);
+    // Wpisanie nowej pozycji g³owy do mapy ek
+    ek[nx][ny] = glowa->c;
+
+    // --- REAKCJA NA ZNAKI ---
+    if (co_jest == 'R') {
+        waz1->dodaj(ost_x, ost_y, 'o');
         *zjedz = 1;
+    }
+    else if (co_jest == 'U') {
+        if (waz1->pierwsza->nastepna != NULL) waz1->usun_ogon();
+        *zjedz = 2;
+    }
+    else if (co_jest == 'T') {
+        *zjedz = 3;
+    }
+    else if (co_jest == 'Z') {
+        *zjedz = 4;
     }
 }

@@ -1,4 +1,38 @@
 ﻿#include "H2.h"
+#include <direct.h>
+
+void image()
+{
+    // Usuń zbędne gotoxy - przeszkadzają w wyświetlaniu obrazka
+    system("cls");  // Wyczyść ekran przed wyświetleniem obrazka
+
+    FILE* plik;
+    errno_t err;
+    char nazwa_obrazka[] = "..\\image1.txt";
+
+    err = fopen_s(&plik, nazwa_obrazka, "r");
+
+    if (err != 0 || plik == NULL)
+    {
+        printf("Nie mozna otworzyc pliku: %s\n", nazwa_obrazka);
+        printf("Kod bledu: %d\n", err);
+
+        // Sprawdź, czy plik istnieje w bieżącym katalogu
+        printf("Upewnij sie, ze plik znajduje sie w katalogu:\n");
+        system("cd");  // Pokazuje aktualny katalog
+
+        return;
+    }
+
+    int znak;
+    while ((znak = fgetc(plik)) != EOF)
+    {
+        putchar(znak);
+    }
+
+    fclose(plik);
+    Sleep(3000);
+}
 
 void clean() {
     for (int i = 25; i >= 0; i--) {
@@ -8,23 +42,39 @@ void clean() {
     }
 }
 
+int sprawdz_stan_gry(int punkty, int zycia) {
+    if (punkty >= 10) {
+        system("cls");
+        printf("GRATULACJE! Wygrales! Zdobyte punkty: %d\n", punkty);
+        return 1; // Koniec gry - wygrana
+    }
+    if (zycia <= 0) {
+        system("cls");
+        printf("GAME OVER! Straciles wszystkie zycia. Punkty: %d\n", punkty);
+        return 1; // Koniec gry - przegrana
+    }
+    return 0; // Graj dalej
+}
+
 void ramka() {
-	char aa;
-	aa = 218; gotoxy(1, 1); printf("%c", aa);
-	aa = 191; gotoxy(80, 1); printf("%c", aa);
-	aa = 192; gotoxy(1, 24); printf("%c", aa);
-	aa = 217; gotoxy(80, 24); printf("%c", aa);
-	aa = 196;
-	for (int i = 2; i < 80; i++) {
-		gotoxy(i, 1); printf("%c", aa);
-		gotoxy(i, 24); printf("%c", aa);
-	}
-	aa = 179;
-	for (int i = 2; i < 24; i++) {
-		gotoxy(1, i); printf("%c", aa);
-		gotoxy(80, i); printf("%c", aa);
-	}
-	gotoxy(2, 25);
+    // Możesz dodać kolor dla ramki
+    ustaw_kolor(KOLOR_BIALY); // Różowa ramka
+
+    for (int i = 0; i < 80; i++) {
+        gotoxy(i, 0);
+        printf("#");
+        gotoxy(i, 19);
+        printf("#");
+    }
+
+    for (int i = 0; i < 20; i++) {
+        gotoxy(0, i);
+        printf("#");
+        gotoxy(79, i);
+        printf("#");
+    }
+
+    przywroc_kolor();
 }
 
 
@@ -57,45 +107,103 @@ void menu(const char* imieGracza) {
 
 int game() {
     int punkty = 0;
+    int punkty_ai = 0;
+    int zycia = 3;
+    int poziom = 1;
     char ek[80][20] = { ' ' };
-    int kier = 1, koniec = 0;
+    int kier = 1, koniec = 0, kier2 = 1;
+    int licznik_odskoku_ai = 0;
 
-    lista* waz1 = new lista(); // Używamy new, skoro to C++
+    lista* waz1 = NULL, * waz2 = NULL;
 
-    ramka();
+    auto resetuj_weze = [&]() {
+        if (waz1) delete waz1;
+        if (waz2) delete waz2;
+        waz1 = new lista();
+        waz2 = new lista();
+        waz1->dodaj(10, 10, 'o'); waz1->dodaj(11, 10, 'o'); waz1->dodaj(12, 10, 'x'); // Gracz
+        waz2->dodaj(40, 5, 's'); waz2->dodaj(41, 5, 's'); waz2->dodaj(42, 5, 's');    // AI
+        };
+
+    resetuj_weze();
     ini(ek);
+    ramka(); // Zakładam, że ramka wypełnia ek znakami '#'
     druk_e(ek);
 
-    // Inicjalizacja węża
-    waz1->dodaj(10, 10, 'o');
-    waz1->dodaj(11, 10, 'o');
-    waz1->dodaj(12, 10, 'o');
-    waz1->dodaj(13, 10, 'x');
-
-    gotoxy(2, 25);
-    printf("Punkty: %d", punkty);
+    jedzenie(ek, 'R');
+    jedzenie(ek, 'U');
 
     while (!koniec) {
-        kla(&kier, &koniec); // Pamiętaj: w H2.h i w definicji kla musi być int* koniec
+        // Interfejs
+        gotoxy(2, 25);
+        printf("POZIOM: %d | TWOJE PUNKTY: %d | ZYCIA: %d      ", poziom, punkty, zycia);
+        gotoxy(2, 26);
+        printf("PUNKTY PRZECIWNIKA: %d / 10      ", punkty_ai);
+
+        kla(&kier, &koniec);
         if (koniec) break;
 
-        int czy_zjadl = 0;
+        kier2 = oblicz_kierunek_ai(waz2, ek, kier2, &licznik_odskoku_ai);
 
-        // Wywołujemy funkcję ruchu, która zwróci punkt przez &czy_zjadl
-        lista_ruch(waz1, kier, ek, &czy_zjadl);
+        int wynik_gracz = 0;
+        int wynik_ai = 0;
 
-        if (czy_zjadl == 1) {
-            punkty++;
-            gotoxy(2, 25);
-            printf("Punkty: %d  ", punkty);
+        lista_ruch(waz1, kier, ek, &wynik_gracz);
+        lista_ruch(waz2, kier2, ek, &wynik_ai);
+
+        // --- OBSŁUGA GRACZA ---
+        if (wynik_gracz == 99) {
+            system("cls"); printf("\n\n PRZEGRANA! Kolizja!");
+            break;
+        }
+        if (wynik_gracz == 1) { punkty++; jedzenie(ek, 'R'); }
+        else if (wynik_gracz == 2) { punkty--; jedzenie(ek, 'U'); }
+        else if (wynik_gracz == 3) { zycia--; jedzenie(ek, 'T'); }
+        else if (wynik_gracz == 4) { zycia++; jedzenie(ek, 'Z'); }
+
+        // --- OBSŁUGA AI ---
+        if (wynik_ai == 99) {
+            system("cls"); printf("\n\n ZWYCIESTWO! Przeciwnik sie rozbil!");
+            break;
+        }
+        if (wynik_ai != 0) {
+            licznik_odskoku_ai = 4;
+            if (wynik_ai == 1) { punkty_ai++; jedzenie(ek, 'R'); }
+            else if (wynik_ai == 2) jedzenie(ek, 'U');
+            else if (wynik_ai == 3) jedzenie(ek, 'T');
+            else if (wynik_ai == 4) jedzenie(ek, 'Z');
         }
 
-        waz1->wyswietl();
-        Sleep(300);
-        waz1->czysc();
+        // --- PROGRESJA POZIOMU ---
+        if (poziom == 1 && punkty >= 10) {
+            poziom = 2; punkty = 0; punkty_ai = 0;
+            system("cls"); printf("\n\n AWANS NA POZIOM 2!"); Sleep(1500);
+            ini(ek); ramka(); druk_e(ek);
+            resetuj_weze();
+            jedzenie(ek, 'R'); jedzenie(ek, 'U'); jedzenie(ek, 'T'); jedzenie(ek, 'Z');
+            continue;
+        }
+
+        // --- KONIEC GRY ---
+        if (zycia <= 0) {
+            system("cls"); printf("\n\n PRZEGRANA! Straciles zycia.");
+            break;
+        }
+        if (punkty_ai >= 10) {
+            system("cls"); printf("\n\n PRZEGRANA! AI zebralo 10 punktow.");
+            break;
+        }
+
+        // Rysowanie
+        ustaw_kolor(KOLOR_ZOLTY); waz1->wyswietl();
+        ustaw_kolor(KOLOR_CZERWONY); waz2->wyswietl();
+        przywroc_kolor();
+
+        Sleep(250);
+        waz1->czysc(); waz2->czysc();
     }
 
-    delete waz1;
+    delete waz1; delete waz2;
     return punkty;
 }
 
@@ -113,6 +221,9 @@ int main() {
     char playerName[20] = "SnakeName";
     char choice;
     int r = 1;
+
+    image();
+    _getch(); //zatrzymanie na chwile
 
     while (r == 1) {
         system("CLS");
@@ -202,7 +313,27 @@ int main() {
             break;
         }
 
-        case '4':
+        case '4':{
+            FILE * local_stream = NULL;
+            errno_t local_err;
+
+
+            local_err = fopen_s(&local_stream, "data.dat", "w");
+
+            if (local_err == 0 && local_stream != NULL) {
+                fclose(local_stream);
+                printf("Data has been reset\n");
+            }
+            else {
+                printf("ERROR: file couldn't be read\n");
+            }
+
+            printf("\nPress any button...");
+            while (!_kbhit()) {}
+            system("CLS");
+            break;
+        }
+        case '5':
             r = 0;
             break;
         }
